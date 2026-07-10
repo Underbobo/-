@@ -795,6 +795,14 @@ button:active {
   color: var(--blue);
 }
 
+.status-cancelling {
+  color: var(--amber);
+}
+
+.status-cancelled {
+  color: var(--slate);
+}
+
 .task-actions {
   display: flex;
   gap: 8px;
@@ -834,6 +842,41 @@ tbody tr {
 
 tbody tr:hover {
   background: var(--brand-soft);
+}
+
+.job-action {
+  min-height: 30px;
+  padding: 5px 10px;
+  color: var(--brand-strong);
+  font-size: 12px;
+  background: #fff;
+}
+
+.job-action.danger {
+  color: #c53d36;
+  border-color: #f1c3bf;
+  background: #fff7f6;
+}
+
+.job-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--line);
+  background: #fbfdff;
+}
+
+.job-log-head strong {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+#jobLogActions {
+  display: flex;
+  gap: 8px;
 }
 
 .log-view {

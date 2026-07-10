@@ -98,9 +98,20 @@ function renderRecentJobs() {
 function statusText(status) {
   return {
     running: "运行中",
+    cancelling: "取消中",
+    cancelled: "已取消",
     success: "成功",
     failed: "失败",
   }[status] || status;
+}
+
+function jobActions(job) {
+  if (job.status === "running" || job.status === "cancelling") {
+    const disabled = job.status === "cancelling" ? "disabled" : "";
+    const text = job.status === "cancelling" ? "取消中" : "取消运行";
+    return `<button class="job-action danger" data-cancel="${escapeHtml(job.id)}" ${disabled}>${text}</button>`;
+  }
+  return `<button class="job-action" data-retry="${escapeHtml(job.id)}">重跑</button>`;
 }
 
 function renderTasks() {
@@ -184,11 +195,12 @@ function renderJobs() {
           <td>${escapeHtml(job.started_at || "")}</td>
           <td>${job.duration_seconds ? `${job.duration_seconds}s` : "-"}</td>
           <td>${job.returncode ?? "-"}</td>
+          <td>${jobActions(job)}</td>
         </tr>
       `,
     )
     .join("");
-  document.querySelector("#jobsTable").innerHTML = rows || `<tr><td colspan="6">暂无运行记录</td></tr>`;
+  document.querySelector("#jobsTable").innerHTML = rows || `<tr><td colspan="7">暂无运行记录</td></tr>`;
 }
 
 function renderAll() {
@@ -254,7 +266,23 @@ function closeRunModal() {
 
 async function showJobLog(jobId) {
   const job = await api(`/api/jobs/${jobId}`);
+  document.querySelector("#jobLogTitle").textContent = `${job.task_title || job.task_id} · ${statusText(job.status)}`;
+  document.querySelector("#jobLogActions").innerHTML = jobActions(job);
   document.querySelector("#jobLog").textContent = job.log_tail || "暂无日志输出。";
+}
+
+async function cancelJob(jobId) {
+  await api(`/api/jobs/${jobId}/cancel`, { method: "POST", body: "{}" });
+  showToast("已发送取消请求");
+  await refreshAll();
+  await showJobLog(jobId);
+}
+
+async function retryJob(jobId) {
+  const job = await api(`/api/jobs/${jobId}/retry`, { method: "POST", body: "{}" });
+  showToast("已重新加入任务");
+  await refreshAll();
+  await showJobLog(job.id);
 }
 
 document.addEventListener("click", async (event) => {
@@ -288,6 +316,26 @@ document.addEventListener("click", async (event) => {
 
   if (event.target.closest("[data-modal-close]")) {
     closeRunModal();
+    return;
+  }
+
+  const cancel = event.target.closest("[data-cancel]");
+  if (cancel) {
+    try {
+      await cancelJob(cancel.dataset.cancel);
+    } catch (error) {
+      showToast(error.message);
+    }
+    return;
+  }
+
+  const retry = event.target.closest("[data-retry]");
+  if (retry) {
+    try {
+      await retryJob(retry.dataset.retry);
+    } catch (error) {
+      showToast(error.message);
+    }
     return;
   }
 
