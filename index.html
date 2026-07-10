@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>自营自播日报控制台</title>
+    <link rel="stylesheet" href="/styles.css?v=2" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">自</div>
+          <div>
+            <h1>自营自播日报控制台</h1>
+            <p id="projectPath">读取项目中...</p>
+          </div>
+        </div>
+        <nav class="nav">
+          <button class="nav-item active" data-section="overview">总览</button>
+          <button class="nav-item" data-section="tasks">采集与飞书</button>
+          <button class="nav-item" data-section="jobs">运行记录</button>
+          <button class="nav-item" data-section="datasets">数据仓库</button>
+          <button class="nav-item" data-section="scripts">脚本档案</button>
+        </nav>
+        <div class="runtime">
+          <span>运行时</span>
+          <strong id="pythonPath">-</strong>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h2 id="sectionTitle">总览</h2>
+            <p id="sectionSub">自营直播、投流、订单与飞书日报的内网操作台</p>
+          </div>
+          <div class="top-actions">
+            <button id="refreshBtn" class="button secondary">刷新</button>
+          </div>
+        </header>
+
+        <section id="overview" class="section active">
+          <div class="metrics-grid" id="metricsGrid"></div>
+          <div class="two-column">
+            <div class="panel">
+              <div class="panel-head">
+                <h3>最近运行</h3>
+              </div>
+              <div id="recentJobs" class="compact-list"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>最新底表</h3>
+              </div>
+              <div id="latestDataset" class="dataset-preview"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tasks" class="section">
+          <div class="filters">
+            <button class="chip active" data-filter="all">全部</button>
+            <button class="chip" data-filter="collect">采集</button>
+            <button class="chip" data-filter="upload">飞书</button>
+            <button class="chip" data-filter="report">汇总</button>
+          </div>
+          <div id="taskGrid" class="task-grid"></div>
+        </section>
+
+        <section id="jobs" class="section">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>任务运行记录</h3>
+              <span class="muted">点击记录查看日志尾部</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>状态</th>
+                    <th>任务</th>
+                    <th>模式</th>
+                    <th>开始时间</th>
+                    <th>耗时</th>
+                    <th>退出码</th>
+                  </tr>
+                </thead>
+                <tbody id="jobsTable"></tbody>
+              </table>
+            </div>
+            <pre id="jobLog" class="log-view">选择一条运行记录查看日志。</pre>
+          </div>
+        </section>
+
+        <section id="datasets" class="section">
+          <div id="datasetGrid" class="dataset-grid"></div>
+        </section>
+
+        <section id="scripts" class="section">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>脚本档案</h3>
+              <span class="muted">控制台任务、采集脚本、飞书脚本与辅助工具</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>角色</th>
+                    <th>文件</th>
+                    <th>大小</th>
+                    <th>更新时间</th>
+                  </tr>
+                </thead>
+                <tbody id="scriptsTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
