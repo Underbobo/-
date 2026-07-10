@@ -1,19 +1,16 @@
 const state = {
   section: "overview",
-  filter: "all",
+  platform: "all",
   tasks: [],
   jobs: [],
-  datasets: [],
-  scripts: [],
   summary: null,
 };
 
 const sectionMeta = {
-  overview: ["总览", "自营直播、投流、订单与飞书日报的内网操作台"],
-  tasks: ["采集与飞书", "按平台触发采集、上传、日报汇总脚本"],
-  jobs: ["运行记录", "查看任务状态、耗时、退出码和日志尾部"],
-  datasets: ["数据仓库", "扫描各来源 warehouse 目录里的 CSV 底表"],
-  scripts: ["脚本档案", "目录下采集、飞书、汇总和辅助脚本清单"],
+  overview: ["交付看板", "按平台完成每日数据交付"],
+  tasks: ["数据采集", "选择平台后，按步骤完成采集、同步和汇总"],
+  jobs: ["任务中心", "查看任务状态、耗时、退出码和运行日志"],
+  guide: ["操作指南", "三步完成日常数据交付"],
 };
 
 async function api(path, options = {}) {
@@ -70,38 +67,11 @@ function setSection(section) {
   document.querySelector("#sectionSub").textContent = sub;
 }
 
-function renderMetrics() {
-  const summary = state.summary || {};
-  const schedule = summary.daily_schedule || {};
-  const enabledTasks = (schedule.enabled_task_ids || []).join(" / ") || "未启用";
-  const automationStatus = schedule.lock?.active ? `运行中：${schedule.lock.owner}` : "空闲";
-  const metrics = [
-    ["控制台任务", summary.task_count],
-    ["脚本档案", summary.script_count],
-    ["CSV 底表", summary.dataset_count],
-    ["底表总行数", summary.total_dataset_rows],
-    ["运行中任务", summary.running_jobs],
-    ["最近失败", summary.recent_failed_jobs],
-    ["每日计划", schedule.schedule || "未配置"],
-    ["定时任务", enabledTasks],
-    ["自动化状态", automationStatus],
-    ["最新刷新", summary.generated_at || "-"],
-    ["Python", summary.python ? "已配置" : "-"],
-  ];
-
-  document.querySelector("#metricsGrid").innerHTML = metrics
-    .map(
-      ([label, value]) => `
-        <div class="metric">
-          <span>${escapeHtml(label)}</span>
-          <strong>${typeof value === "number" ? fmtNumber(value) : escapeHtml(value)}</strong>
-        </div>
-      `,
-    )
-    .join("");
-
-  document.querySelector("#projectPath").textContent = summary.project_dir || "-";
-  document.querySelector("#pythonPath").textContent = summary.python || "-";
+function renderServiceStatus() {
+  const schedule = state.summary?.daily_schedule || {};
+  document.querySelector("#serviceStatus").innerHTML = schedule.lock?.active
+    ? `<i></i> 自动化运行中`
+    : `<i></i> 服务就绪`;
 }
 
 function renderRecentJobs() {
@@ -124,24 +94,6 @@ function renderRecentJobs() {
     .join("");
 }
 
-function renderLatestDataset() {
-  const latest = state.summary?.latest_dataset;
-  const el = document.querySelector("#latestDataset");
-  if (!latest) {
-    el.innerHTML = `<h4>暂无 CSV 底表</h4><p class="muted">采集或上传脚本生成 warehouse CSV 后会显示。</p>`;
-    return;
-  }
-  el.innerHTML = `
-    <h4>${escapeHtml(latest.name)}</h4>
-    <p>${escapeHtml(latest.path)}</p>
-    <div class="dataset-stats">
-      <div><span>平台</span><strong>${escapeHtml(latest.platform)}</strong></div>
-      <div><span>行数</span><strong>${fmtNumber(latest.rows)}</strong></div>
-      <div><span>更新时间</span><strong>${escapeHtml(latest.modified_at)}</strong></div>
-    </div>
-  `;
-}
-
 function statusText(status) {
   return {
     running: "运行中",
@@ -151,32 +103,72 @@ function statusText(status) {
 }
 
 function renderTasks() {
-  const tasks = state.tasks.filter((task) => state.filter === "all" || task.kind === state.filter);
-  document.querySelector("#taskGrid").innerHTML = tasks
-    .map((task) => {
-      const missing = !task.script_exists;
-      const outputCount = task.outputs?.filter((item) => item.exists).length || 0;
-      return `
-        <article class="task">
-          <div class="task-body">
-            <div class="task-top">
-              <h3>${escapeHtml(task.title)}</h3>
-              <span class="badge ${task.kind}">${escapeHtml(task.kind_label)}</span>
-            </div>
-            <p>${escapeHtml(task.description)}</p>
-            <div class="task-meta">
-              <span class="badge">${escapeHtml(task.platform)}</span>
-              <span class="badge ${missing ? "failed" : ""}">${missing ? "脚本缺失" : "脚本可用"}</span>
-              <span class="badge">底表 ${outputCount}/${task.outputs?.length || 0}</span>
-            </div>
-            <p>${escapeHtml(task.script)}</p>
-          </div>
-          <div class="task-actions">
-            <button class="button" data-run="${escapeHtml(task.id)}" data-mode="normal" ${missing ? "disabled" : ""}>运行</button>
-            <button class="button ghost" data-run="${escapeHtml(task.id)}" data-mode="preview" ${!task.has_preview || missing ? "disabled" : ""}>预览</button>
-          </div>
-        </article>
-      `;
+  const platforms = [...new Set(state.tasks.map((task) => task.platform))];
+  const selected = state.platform === "all" ? platforms : [state.platform];
+  document.querySelector("#platformTabs").innerHTML = ["all", ...platforms]
+    .map((platform) => {
+      const label = platform === "all" ? "全部平台" : platform;
+      return `<button class="platform-tab ${state.platform === platform ? "active" : ""}" data-platform="${escapeHtml(platform)}">${escapeHtml(label)}</button>`;
+    })
+    .join("");
+
+  const kindGuide = {
+    collect: ["1", "采集数据", "从平台获取最新数据"],
+    upload: ["2", "同步飞书", "将本地结果同步到日报数据表"],
+    report: ["3", "生成日报", "按当前数据计算日报结果"],
+  };
+  document.querySelector("#taskGrid").innerHTML = selected
+    .map((platform) => {
+      const tasks = state.tasks.filter((task) => task.platform === platform);
+      const blocks = ["collect", "upload", "report"]
+        .map((kind) => {
+          const group = tasks.filter((task) => task.kind === kind);
+          if (!group.length) return "";
+          const [step, title, description] = kindGuide[kind];
+          return `
+            <section class="task-step">
+              <div class="task-step-head"><span>${step}</span><div><h3>${title}</h3><p>${description}</p></div></div>
+              <div class="task-grid">${group.map(renderTaskCard).join("")}</div>
+            </section>`;
+        })
+        .join("");
+      return `<section class="platform-task-group"><div class="platform-task-head"><h2>${escapeHtml(platform)}</h2><span>${tasks.length} 项可操作任务</span></div>${blocks}</section>`;
+    })
+    .join("");
+}
+
+function renderTaskCard(task) {
+  const missing = !task.script_exists;
+  const outputCount = task.outputs?.filter((item) => item.exists).length || 0;
+  return `
+    <article class="task">
+      <div class="task-body">
+        <div class="task-top">
+          <h3>${escapeHtml(task.title)}</h3>
+          <span class="badge ${task.kind}">${escapeHtml(task.kind_label)}</span>
+        </div>
+        <p>${escapeHtml(task.description)}</p>
+        <div class="task-meta">
+          <span class="badge ${missing ? "failed" : ""}">${missing ? "暂不可用" : "可运行"}</span>
+          <span class="badge">已就绪 ${outputCount}/${task.outputs?.length || 0}</span>
+        </div>
+      </div>
+      <div class="task-actions">
+        <button class="button" data-run="${escapeHtml(task.id)}" data-mode="normal" ${missing ? "disabled" : ""}>开始运行</button>
+        <button class="button ghost" data-run="${escapeHtml(task.id)}" data-mode="preview" ${!task.has_preview || missing ? "disabled" : ""}>预览</button>
+      </div>
+    </article>`;
+}
+
+function renderDeliveryBoard() {
+  const platforms = [...new Set(state.tasks.map((task) => task.platform))];
+  const el = document.querySelector("#deliveryBoard");
+  el.innerHTML = platforms
+    .map((platform) => {
+      const tasks = state.tasks.filter((task) => task.platform === platform);
+      const recent = state.jobs.find((job) => job.platform === platform);
+      const status = recent ? statusText(recent.status) : "等待操作";
+      return `<button class="delivery-card" data-open-platform="${escapeHtml(platform)}"><strong>${escapeHtml(platform)}</strong><span>${tasks.length} 项任务</span><em class="status-${recent?.status || "running"}">${escapeHtml(status)}</em><b>进入操作 →</b></button>`;
     })
     .join("");
 }
@@ -199,71 +191,22 @@ function renderJobs() {
   document.querySelector("#jobsTable").innerHTML = rows || `<tr><td colspan="6">暂无运行记录</td></tr>`;
 }
 
-function renderDatasets() {
-  const el = document.querySelector("#datasetGrid");
-  if (!state.datasets.length) {
-    el.innerHTML = `<div class="panel"><div class="dataset-main"><h3>暂无 CSV 底表</h3><p>运行飞书上传或本地入库脚本后，warehouse 目录里的 CSV 会出现在这里。</p></div></div>`;
-    return;
-  }
-  el.innerHTML = state.datasets
-    .map(
-      (item) => `
-        <article class="dataset">
-          <div class="dataset-main">
-            <h3>${escapeHtml(item.name)}</h3>
-            <p>${escapeHtml(item.path)}</p>
-            <p>${escapeHtml((item.columns || []).slice(0, 8).join(" / "))}</p>
-          </div>
-          <div class="dataset-stats">
-            <div><span>平台</span><strong>${escapeHtml(item.platform)}</strong></div>
-            <div><span>行数</span><strong>${fmtNumber(item.rows)}</strong></div>
-            <div><span>大小</span><strong>${fmtBytes(item.size)}</strong></div>
-          </div>
-        </article>
-      `,
-    )
-    .join("");
-}
-
-function renderScripts() {
-  const rows = state.scripts
-    .map(
-      (script) => `
-        <tr>
-          <td>${escapeHtml(script.role)}</td>
-          <td>${escapeHtml(script.path)}</td>
-          <td>${fmtBytes(script.size)}</td>
-          <td>${escapeHtml(script.modified_at)}</td>
-        </tr>
-      `,
-    )
-    .join("");
-  document.querySelector("#scriptsTable").innerHTML = rows || `<tr><td colspan="4">暂无脚本</td></tr>`;
-}
-
 function renderAll() {
-  renderMetrics();
-  renderRecentJobs();
-  renderLatestDataset();
+  renderServiceStatus();
+  renderDeliveryBoard();
   renderTasks();
   renderJobs();
-  renderDatasets();
-  renderScripts();
 }
 
 async function refreshAll() {
-  const [summary, tasks, jobs, datasets, scripts] = await Promise.all([
+  const [summary, tasks, jobs] = await Promise.all([
     api("/api/summary"),
     api("/api/tasks"),
     api("/api/jobs?limit=60"),
-    api("/api/datasets"),
-    api("/api/scripts"),
   ]);
   state.summary = summary;
   state.tasks = tasks;
   state.jobs = jobs;
-  state.datasets = datasets;
-  state.scripts = scripts;
   renderAll();
 }
 
@@ -297,10 +240,17 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
-  const filter = event.target.closest("[data-filter]");
-  if (filter) {
-    state.filter = filter.dataset.filter;
-    document.querySelectorAll("[data-filter]").forEach((node) => node.classList.toggle("active", node === filter));
+  const platform = event.target.closest("[data-platform]");
+  if (platform) {
+    state.platform = platform.dataset.platform;
+    renderTasks();
+    return;
+  }
+
+  const platformShortcut = event.target.closest("[data-open-platform]");
+  if (platformShortcut) {
+    state.platform = platformShortcut.dataset.openPlatform;
+    setSection("tasks");
     renderTasks();
     return;
   }
