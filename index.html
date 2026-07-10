@@ -120,6 +120,26 @@
       </main>
     </div>
 
+    <div id="runModal" class="run-modal" aria-hidden="true">
+      <div class="run-modal-backdrop" data-modal-close></div>
+      <section class="run-modal-card" role="dialog" aria-modal="true" aria-labelledby="runModalTitle">
+        <header class="run-modal-head">
+          <div><span id="runModalPlatform" class="eyebrow">数据任务</span><h3 id="runModalTitle">启动任务</h3></div>
+          <button class="modal-close" data-modal-close aria-label="关闭">关闭</button>
+        </header>
+        <div class="run-modal-body">
+          <p id="runModalDescription" class="run-modal-description"></p>
+          <p class="run-modal-label">选择执行方式</p>
+          <label class="run-option selected"><input type="radio" name="runMode" value="normal" checked /><span><strong>正常运行</strong><small>执行完整流程，可能采集数据、同步飞书或生成日报。</small></span></label>
+          <label id="previewOption" class="run-option"><input type="radio" name="runMode" value="preview" /><span><strong>安全预览</strong><small id="previewOptionDescription">仅检查或采集，不写入正式结果。</small></span></label>
+        </div>
+        <footer class="run-modal-foot">
+          <button class="button ghost" data-modal-close>取消</button>
+          <button id="runModalSubmit" class="button">开始运行</button>
+        </footer>
+      </section>
+    </div>
+
     <div id="toast" class="toast"></div>
     <script src="/app.js"></script>
   </body>

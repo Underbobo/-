@@ -1,6 +1,7 @@
 const state = {
   section: "overview",
   platform: "all",
+  pendingTask: null,
   tasks: [],
   jobs: [],
   summary: null,
@@ -154,8 +155,7 @@ function renderTaskCard(task) {
         </div>
       </div>
       <div class="task-actions">
-        <button class="button" data-run="${escapeHtml(task.id)}" data-mode="normal" ${missing ? "disabled" : ""}>开始运行</button>
-        <button class="button ghost" data-run="${escapeHtml(task.id)}" data-mode="preview" ${!task.has_preview || missing ? "disabled" : ""}>预览</button>
+        <button class="button" data-run="${escapeHtml(task.id)}" ${missing ? "disabled" : ""}>选择方式并运行</button>
       </div>
     </article>`;
 }
@@ -213,10 +213,6 @@ async function refreshAll() {
 async function runTask(taskId, mode) {
   const task = state.tasks.find((item) => item.id === taskId);
   if (!task) return;
-  if (mode === "normal") {
-    const ok = window.confirm(`确认运行：${task.title}\n\n该操作可能打开浏览器、下载数据或写入飞书。`);
-    if (!ok) return;
-  }
   const job = await api("/api/jobs", {
     method: "POST",
     body: JSON.stringify({ task_id: taskId, mode }),
@@ -226,6 +222,34 @@ async function runTask(taskId, mode) {
   setSection("jobs");
   await refreshAll();
   await showJobLog(job.id);
+}
+
+function previewDescription(task) {
+  if (task.kind === "collect") return "仅采集数据，不同步飞书。";
+  if (task.kind === "upload") return "校验数据，不写入飞书。";
+  return "仅计算结果，不写入正式日报。";
+}
+
+function openRunModal(task) {
+  state.pendingTask = task;
+  document.querySelector("#runModalPlatform").textContent = task.platform;
+  document.querySelector("#runModalTitle").textContent = task.title;
+  document.querySelector("#runModalDescription").textContent = task.description;
+  const preview = document.querySelector("#previewOption");
+  preview.hidden = !task.has_preview;
+  document.querySelector("#previewOptionDescription").textContent = previewDescription(task);
+  document.querySelector('input[name="runMode"][value="normal"]').checked = true;
+  document.querySelectorAll(".run-option").forEach((node) => node.classList.toggle("selected", node.querySelector("input").checked));
+  const modal = document.querySelector("#runModal");
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeRunModal() {
+  const modal = document.querySelector("#runModal");
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+  state.pendingTask = null;
 }
 
 async function showJobLog(jobId) {
@@ -257,11 +281,13 @@ document.addEventListener("click", async (event) => {
 
   const run = event.target.closest("[data-run]");
   if (run) {
-    try {
-      await runTask(run.dataset.run, run.dataset.mode);
-    } catch (error) {
-      showToast(error.message);
-    }
+    const task = state.tasks.find((item) => item.id === run.dataset.run);
+    if (task) openRunModal(task);
+    return;
+  }
+
+  if (event.target.closest("[data-modal-close]")) {
+    closeRunModal();
     return;
   }
 
@@ -272,6 +298,23 @@ document.addEventListener("click", async (event) => {
     } catch (error) {
       showToast(error.message);
     }
+  }
+});
+
+document.querySelector("#runModal").addEventListener("change", (event) => {
+  if (event.target.name !== "runMode") return;
+  document.querySelectorAll(".run-option").forEach((node) => node.classList.toggle("selected", node.querySelector("input").checked));
+});
+
+document.querySelector("#runModalSubmit").addEventListener("click", async () => {
+  const task = state.pendingTask;
+  if (!task) return;
+  const mode = document.querySelector('input[name="runMode"]:checked').value;
+  closeRunModal();
+  try {
+    await runTask(task.id, mode);
+  } catch (error) {
+    showToast(error.message);
   }
 });
 

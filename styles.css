@@ -927,6 +927,122 @@ tbody tr:hover {
   transform: translateY(0);
 }
 
+.run-modal {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: 24px;
+}
+
+.run-modal.show {
+  display: grid;
+}
+
+.run-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 33, 60, 0.38);
+  backdrop-filter: blur(3px);
+}
+
+.run-modal-card {
+  position: relative;
+  width: min(720px, 100%);
+  overflow: hidden;
+  border: 1px solid #d8e5fa;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 28px 70px rgba(18, 43, 89, 0.28);
+}
+
+.run-modal-head,
+.run-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  background: linear-gradient(180deg, #fff, #f8fbff);
+}
+
+.run-modal-head {
+  border-bottom: 1px solid var(--line);
+}
+
+.run-modal-head h3 {
+  margin: 5px 0 0;
+  font-size: 22px;
+}
+
+.modal-close {
+  min-height: 36px;
+  padding: 7px 12px;
+  color: var(--text-soft);
+  background: #fff;
+}
+
+.run-modal-body {
+  padding: 20px 22px 22px;
+}
+
+.run-modal-description {
+  margin: 0 0 17px;
+  color: var(--muted);
+}
+
+.run-modal-label {
+  margin: 0 0 10px;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.run-option {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 13px 15px;
+  margin-top: 10px;
+  cursor: pointer;
+  border: 1px solid #d8e5fa;
+  border-radius: 11px;
+  background: #f7faff;
+}
+
+.run-option.selected {
+  border-color: #9dbbff;
+  background: #edf4ff;
+  box-shadow: inset 0 0 0 1px rgba(47, 107, 255, 0.08);
+}
+
+.run-option input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--brand);
+}
+
+.run-option strong,
+.run-option small {
+  display: block;
+}
+
+.run-option strong {
+  color: var(--text);
+}
+
+.run-option small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.run-modal-foot {
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+}
+
 @media (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 1fr;
